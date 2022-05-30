@@ -1,4 +1,3 @@
-import tifffile as tiff
 import sys
 import os
 import glob
