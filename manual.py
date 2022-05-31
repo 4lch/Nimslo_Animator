@@ -69,7 +69,7 @@ for i in range(0, len(grabbed_files) - len(grabbed_files)%4, 4):
         x, y = last_point
         xs.append(x)
         ys.append(y)
-        print(f'{x=}, {y=}')
+        print(f'x={x}, y={y}')
 
     frames = []
     height_of_one_frame, width_of_one_frame, depth = imgs[0].shape
