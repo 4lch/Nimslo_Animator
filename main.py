@@ -20,7 +20,7 @@ def select_point(event, x, y, flags, param):
 
 # Get the folder that the user has dropped on the script
 dropped_folder = sys.argv[1]
-# dropped_folder = 'C:\\Users\\Adrien\\Desktop\\Code\\Nimslo_Gif_Maker\\00056355'
+# dropped_folder = 'C:\\Users\\Adrien\\Desktop\\00067953'
 print(dropped_folder)
 
 dest_folder = f'{dropped_folder}/gifs'
@@ -51,10 +51,17 @@ for i in range(0, len(grabbed_files) - len(grabbed_files)%4, 4):
     points = []
     xs = []
     ys = []
+
     for k, img in enumerate(imgs):
+
+        imgbgr = np.zeros(img.shape, dtype=img.dtype)
+        imgbgr[:,:,0] = img[:,:,2]
+        imgbgr[:,:,1] = img[:,:,1]
+        imgbgr[:,:,2] = img[:,:,0]
+
         last_point = None
         name = names[k]
-        cv2.imshow(name, img)
+        cv2.imshow(name, imgbgr)
         cv2.setMouseCallback(name, select_point)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
