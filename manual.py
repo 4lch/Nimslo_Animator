@@ -5,10 +5,13 @@ import numpy as np
 import cv2
 from PIL import Image
 import imageio
+import subprocess
+import shutil
 
 # ---------------------------- CONFIGURATION ----------------------------
 
-time_for_one_frame = 0.15 # How long a frame lasts in the final gif. Default is 0.15
+time_for_one_frame_gif = 0.15 # How long a frame lasts in the final gif. Default is 0.15
+time_for_one_frame_vid = 0.18 # How long a frame lasts in the final gif. Default is 0.15
 
 # ---------------- DO NOT TOUCH ANYTHING UNDER THIS LINE ----------------
 last_point = None
@@ -23,12 +26,24 @@ dropped_folder = sys.argv[1]
 # dropped_folder = 'C:\\Users\\Adrien\\Desktop\\00067953'
 print(dropped_folder)
 
-dest_folder = f'{dropped_folder}/gifs'
-if not os.path.exists(dest_folder):
+dest_folder_gifs = f'{dropped_folder}/gifs_manual'
+dest_folder_vids = f'{dropped_folder}/vids_manual'
+
+if not os.path.exists(dest_folder_gifs):
         print('Creating gifs folder.')
-        os.mkdir(dest_folder)
+        os.mkdir(dest_folder_gifs)
 else:
     print('The gifs folder already exists.')
+
+if not os.path.exists(dest_folder_vids):
+        print('Creating vids folder.')
+        os.mkdir(dest_folder_vids)
+else:
+    print('The vids folder already exists.')
+
+shutil.copy("./180.bat", dest_folder_gifs)
+shutil.copy("./CW.bat", dest_folder_gifs)
+shutil.copy("./CCW.bat", dest_folder_gifs)
 
 # Iterate over all images with tiff-like extension in the folder
 grabbed_files = glob.glob(f'{dropped_folder}/*.tif')
@@ -88,7 +103,12 @@ for i in range(0, len(grabbed_files) - len(grabbed_files)%4, 4):
     frames.append(frame2)
     frames.append(frame1)
     
-    # for k, frame in enumerate(frames):
-    #     tiff.imwrite(f'frame_{i+k}.tiff', frame)
+    gif_dest = f'{dest_folder_gifs}/{i}.gif'
+    vid_dest = f'{dest_folder_vids}/{i}.mp4'
+    smoothed_vid_dest = f'{dest_folder_vids}/{i}-smooth.mp4'
 
-    imageio.mimsave(f'{dest_folder}/{i}.gif', frames, duration=time_for_one_frame)
+    imageio.mimsave(gif_dest, frames, duration=time_for_one_frame_gif)
+    imageio.mimsave(vid_dest, frames*5, fps=1/time_for_one_frame_vid)
+
+    # Smooth vid :
+    subprocess.Popen(['ffmpeg', '-i', vid_dest, '-crf', '10', '-vf', 'minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1', smoothed_vid_dest])

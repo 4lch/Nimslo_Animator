@@ -6,6 +6,10 @@ import cv2
 from PIL import Image
 import imageio
 import matplotlib.pyplot as plt
+import subprocess
+import tifffile as tiff
+from skimage.transform import resize
+import shutil
 
 # ---------------------------- CONFIGURATION ----------------------------
 
@@ -13,6 +17,16 @@ time_for_one_frame_gif = 0.15 # How long a frame lasts in the final gif. Default
 time_for_one_frame_vid = 0.18 # How long a frame lasts in the final gif. Default is 0.15
 
 # ---------------- DO NOT TOUCH ANYTHING UNDER THIS LINE ----------------
+
+def find_begin(profile):
+    for i, val in enumerate(profile):
+        if val != 0:
+            return i+1
+
+def find_end(profile):
+    profile = np.flip(profile)
+    dist_to_end = find_begin(profile)
+    return len(profile) - dist_to_end
 
 def match_images_cv(img1, img2):
 
@@ -56,11 +70,11 @@ def match_images_cv(img1, img2):
 
 # Get the folder that the user has dropped on the script
 dropped_folder = sys.argv[1]
-# dropped_folder = 'C:\\Users\\adrie\\Desktop\\projets\\Nimslo_Animator\\test'
+# dropped_folder = 'C:\\Users\\Adrien\\Desktop\\test Nimslo'
 print(dropped_folder)
 
-dest_folder_gifs = f'{dropped_folder}/gifs'
-dest_folder_vids = f'{dropped_folder}/vids'
+dest_folder_gifs = f'{dropped_folder}/gifs_auto'
+dest_folder_vids = f'{dropped_folder}/vids_auto'
 
 if not os.path.exists(dest_folder_gifs):
         print('Creating gifs folder.')
@@ -73,6 +87,10 @@ if not os.path.exists(dest_folder_vids):
         os.mkdir(dest_folder_vids)
 else:
     print('The vids folder already exists.')
+
+shutil.copy("./180.bat", dest_folder_gifs)
+shutil.copy("./CW.bat", dest_folder_gifs)
+shutil.copy("./CCW.bat", dest_folder_gifs)
 
 # Iterate over all images with tiff-like extension in the folder
 grabbed_files = glob.glob(f'{dropped_folder}/*.tif')
@@ -100,10 +118,58 @@ for i in range(0, len(grabbed_files) - len(grabbed_files)%4, 4):
     print('Aligning 3/3')
     aligned3 = match_images_cv(aligned2, imgs[3])
 
+    hor0 = np.average(aligned0[:,:,0], axis=0)
+    hor1 = np.average(aligned1[:,:,0], axis=0)
+    hor2 = np.average(aligned2[:,:,0], axis=0)
+    hor3 = np.average(aligned3[:,:,0], axis=0)
+    ver0 = np.average(aligned0[:,:,0], axis=1)
+    ver1 = np.average(aligned1[:,:,0], axis=1)
+    ver2 = np.average(aligned2[:,:,0], axis=1)
+    ver3 = np.average(aligned3[:,:,0], axis=1)
+
+    b0 = find_begin(hor0)
+    e0 = find_end(hor0)
+    b1 = find_begin(hor1)
+    e1 = find_end(hor1)
+    b2 = find_begin(hor2)
+    e2 = find_end(hor2)
+    b3 = find_begin(hor3)
+    e3 = find_end(hor3)
+
+    h0 = find_begin(ver0)
+    l0 = find_end(ver0)
+    h1 = find_begin(ver1)
+    l1 = find_end(ver1)
+    h2 = find_begin(ver2)
+    l2 = find_end(ver2)
+    h3 = find_begin(ver3)
+    l3 = find_end(ver3)
+
+    begin = max(b0, b1, b2, b3)
+    end = min(e0, e1, e2, e3)
+    high = max(h0, h1, h2, h3)
+    low = min(l0, l1, l2, l3)
+
+    aligned0 = aligned0[high:low, begin:end, :]
+    aligned1 = aligned1[high:low, begin:end, :]
+    aligned2 = aligned2[high:low, begin:end, :]
+    aligned3 = aligned3[high:low, begin:end, :]
+
+    height, width, depth = aligned0.shape
+    aligned0 = resize(aligned0, (int(height/16) * 16, int(width/16) * 16, depth))
+    aligned1 = resize(aligned1, (int(height/16) * 16, int(width/16) * 16, depth))
+    aligned2 = resize(aligned2, (int(height/16) * 16, int(width/16) * 16, depth))
+    aligned3 = resize(aligned3, (int(height/16) * 16, int(width/16) * 16, depth))
+
     frames = [aligned0, aligned1, aligned2, aligned3, aligned2, aligned1]
 
-    imageio.mimsave(f'{dest_folder_gifs}/{i}.gif', frames, duration=time_for_one_frame_gif)
-    imageio.mimsave(f'{dest_folder_vids}/{i}.mp4', frames*10, fps=1/time_for_one_frame_vid)
+    gif_dest = f'{dest_folder_gifs}/{int(i/4)}.gif'
+    vid_dest = f'{dest_folder_vids}/{int(i/4)}.mp4'
+    smoothed_vid_dest = f'{dest_folder_vids}/{int(i/4)}-smooth.mp4'
+
+    imageio.mimsave(gif_dest, frames, duration=time_for_one_frame_gif)
+    imageio.mimsave(vid_dest, frames*5, fps=1/time_for_one_frame_vid)
 
     # Smooth vid :
-    # ffmpeg -i 72.mp4 -crf 10 -vf "minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" output72.mp4
+    subprocess.Popen(['ffmpeg', '-i', vid_dest, '-crf', '10', '-vf', 'minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1', smoothed_vid_dest])
+    # # ffmpeg -i 72.mp4 -crf 10 -vf "minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" output72.mp4
