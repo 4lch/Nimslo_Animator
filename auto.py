@@ -88,9 +88,19 @@ if not os.path.exists(dest_folder_vids):
 else:
     print('The vids folder already exists.')
 
+# Copy image manipulation scripts to the destination
 shutil.copy("./180.bat", dest_folder_gifs)
 shutil.copy("./CW.bat", dest_folder_gifs)
 shutil.copy("./CCW.bat", dest_folder_gifs)
+shutil.copy("./VerFlip.bat", dest_folder_gifs)
+shutil.copy("./HorFlip.bat", dest_folder_gifs)
+
+# Copy video manipulation scripts to the destination
+shutil.copy("./180_VID.bat", dest_folder_vids)
+shutil.copy("./CW_VID.bat", dest_folder_vids)
+shutil.copy("./CCW_VID.bat", dest_folder_vids)
+shutil.copy("./VerFlip_VID.bat", dest_folder_vids)
+shutil.copy("./HorFlip_VID.bat", dest_folder_vids)
 
 # Iterate over all images with tiff-like extension in the folder
 grabbed_files = glob.glob(f'{dropped_folder}/*.tif')
@@ -111,12 +121,16 @@ for i in range(0, len(grabbed_files) - len(grabbed_files)%4, 4):
     print(f'Working on images {names[0]}, {names[1]}, {names[2]} and {names[3]}.')
 
     aligned0 = imgs[0]
-    print('Aligning 1/3')
-    aligned1 = match_images_cv(aligned0, imgs[1])
-    print('Aligning 2/3')
-    aligned2 = match_images_cv(aligned1, imgs[2])
-    print('Aligning 3/3')
-    aligned3 = match_images_cv(aligned2, imgs[3])
+    try:
+        print('Aligning 1/3')
+        aligned1 = match_images_cv(aligned0, imgs[1])
+        print('Aligning 2/3')
+        aligned2 = match_images_cv(aligned1, imgs[2])
+        print('Aligning 3/3')
+        aligned3 = match_images_cv(aligned2, imgs[3])
+    except:
+        print("Could not line up, skipping to the next image.")
+        continue
 
     hor0 = np.average(aligned0[:,:,0], axis=0)
     hor1 = np.average(aligned1[:,:,0], axis=0)
@@ -171,5 +185,5 @@ for i in range(0, len(grabbed_files) - len(grabbed_files)%4, 4):
     imageio.mimsave(vid_dest, frames*5, fps=1/time_for_one_frame_vid)
 
     # Smooth vid :
-    subprocess.Popen(['ffmpeg', '-i', vid_dest, '-crf', '10', '-vf', 'minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1', smoothed_vid_dest])
+    #subprocess.Popen(['ffmpeg', '-i', vid_dest, '-crf', '10', '-vf', 'minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1', smoothed_vid_dest])
     # # ffmpeg -i 72.mp4 -crf 10 -vf "minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1" output72.mp4

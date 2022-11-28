@@ -14,6 +14,7 @@ time_for_one_frame_gif = 0.15 # How long a frame lasts in the final gif. Default
 time_for_one_frame_vid = 0.18 # How long a frame lasts in the final gif. Default is 0.15
 
 # ---------------- DO NOT TOUCH ANYTHING UNDER THIS LINE ----------------
+
 last_point = None
 
 def select_point(event, x, y, flags, param):
